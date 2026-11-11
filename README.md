@@ -45,85 +45,79 @@ The backend is an Express application written in TypeScript. The `src` directory
 
 The `prisma` directory contains the Prisma schema.
 
-## First steps
+## Getting started
 
-To get started with this project, follow these steps:
+Follow these steps in order to run the project locally. You will need three things running: the PostgreSQL database, the backend and the frontend.
 
-1. Clone the repo
-2. install the dependencias for frontend and backend
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) and npm
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (open the app and wait until it is running before step 3)
+
+### 1. Clone the repo
+
+### 2. Install dependencies
+
 ```sh
-cd frontend
+cd backend
 npm install
 
-cd ../backend
+cd ../frontend
 npm install
 ```
-3. Build the backend server
+
+### 3. Start the PostgreSQL database
+
+The database variables (`DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`) live in `backend/.env`. Run this from the project root so Docker Compose can read them:
+
+```sh
+docker compose --env-file backend/.env up -d
 ```
+
+> Note: newer Docker versions use `docker compose` (with a space) instead of `docker-compose`. The `-d` flag runs the container in the background.
+
+To connect with any PostgreSQL client, use the values from `backend/.env` (host `localhost`, port `5432` by default).
+
+To stop the database: `docker compose --env-file backend/.env down`
+
+### 4. Prepare the database with Prisma
+
+Make sure `backend/.env` contains `DATABASE_URL` with the correct connection string. Then, from `backend/`:
+
+```sh
 cd backend
-npm run build
-````
-4. Run the backend server
-```
-cd backend
-npm start
-```
-5. In a new terminal window, build the frontend server:
-```
-cd frontend
-npm run build
-```
-6. Start the frontend server
-```
-cd frontend
-npm start
-```
-
-The backend server will be running at http://localhost:3010, and the frontend will be available at http://localhost:3000.
-
-## Docker y PostgreSQL
-
-This project uses Docker to run a PostgreSQL database. Here's how to get it up and running:
-
-Install Docker on your machine if you haven't done so already. You can download it here.
-Navigate to the root directory of the project in your terminal.
-Run the following command to start the Docker container:
-```
-docker-compose up -d
-```
-
-This will start a PostgreSQL database in a Docker container. The -d flag runs the container in detached mode, meaning it runs in the background.
-
-To access the PostgreSQL database, you can use any PostgreSQL client with the following connection details:
-
-- Host: localhost
-- Port: 5432
-- User: postgres
-- Password: password
-- Database: mydatabase
-
-Please replace User, Password, and Database with the actual user, password, and database name specified in your .env file.
-
-To stop the Docker container, run the following command:
-```
-docker-compose down
-```
-
-To generate the database using Prisma, follow these steps:
-
-Make sure the `.env` file in the root directory of the backend contains the `DATABASE_URL` variable with the correct connection string to your PostgreSQL database. If it doesn't work, try replacing the full URL directly in `schema.prisma`, in the `url` variable.
-
-Open a terminal and navigate to the backend directory where the schema.prisma and seed.ts files are located.
-
-Run the following commands to generate the Prisma structure, apply migrations to your database, and populate it with example data:
-
-```
 npx prisma generate
 npx prisma migrate dev
-ts-node seed.ts
+npm run seed
 ```
 
-Once you have completed all the steps, you should be able to save new candidates, both via the web and API, view them in the database, and retrieve them via GET by ID.
+This generates the Prisma client, applies the migrations and populates the database with example data.
+
+`npm run seed` can be run as many times as you want: it first **deletes all the data** in the database and restarts the ids, so the example positions (1, 2 and 3), their interview steps and their candidates are always the same. It refuses to run with `NODE_ENV=production`.
+
+### 5. Start the backend
+
+In a new terminal:
+
+```sh
+cd backend
+npm run dev
+```
+
+The backend runs at http://localhost:3010 and restarts automatically when you change files. For a production-like run use `npm run build && npm start` instead.
+
+### 6. Start the frontend
+
+In another terminal:
+
+```sh
+cd frontend
+npm start
+```
+
+The frontend runs at http://localhost:3000. There is no need to run `npm run build` first; that is only for production builds.
+
+Once everything is running, you can save new candidates, both via the web and API, view them in the database, and retrieve them via GET by ID.
 
 ```
 POST http://localhost:3010/candidates
@@ -157,6 +151,17 @@ POST http://localhost:3010/candidates
 }
 ```
 -------------------------------------------------------------------------------
+
+## Spec-driven development with OpenSpec
+
+This project uses [OpenSpec](https://github.com/Fission-AI/OpenSpec) to plan changes before implementing them. It is installed as a dev dependency in the root `package.json` and configured for Claude Code (see `openspec/` and `.claude/`).
+
+- Propose a change: `/opsx:propose "description"`. This generates the proposal, design, specs and tasks in `openspec/changes/`.
+- Implement it: `/opsx:apply`.
+- Sync and archive when it is done: `/opsx:sync`, then `/opsx:archive`.
+- Validate the specs: `npx openspec validate --all`.
+
+Current specs live in `openspec/specs/`. Change them through a change, not by hand.
 
 
 # LTI - Sistema de Seguimiento de Talento  | ES
@@ -214,80 +219,77 @@ La descripción y diagrama del modelo de datos los tienes en [ModeloDatos.md](./
 
 ## Primeros Pasos
 
-Para comenzar con este proyecto, sigue estos pasos:
+Sigue estos pasos en orden para ejecutar el proyecto en local. Necesitarás tres cosas en marcha: la base de datos PostgreSQL, el backend y el frontend.
 
-1. Clona el repositorio.
-2. Instala las dependencias para el frontend y el backend:
+### Requisitos previos
+
+- [Node.js](https://nodejs.org/) y npm
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (abre la aplicación y espera a que esté en ejecución antes del paso 3)
+
+### 1. Clona el repositorio
+
+### 2. Instala las dependencias
+
 ```sh
-cd frontend
+cd backend
 npm install
 
-cd ../backend
+cd ../frontend
 npm install
 ```
-3. Construye el servidor backend:
+
+### 3. Inicia la base de datos PostgreSQL
+
+Las variables de la base de datos (`DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`) están en `backend/.env`. Ejecuta esto desde la raíz del proyecto para que Docker Compose pueda leerlas:
+
+```sh
+docker compose --env-file backend/.env up -d
 ```
+
+> Nota: las versiones nuevas de Docker usan `docker compose` (con espacio) en lugar de `docker-compose`. La bandera `-d` ejecuta el contenedor en segundo plano.
+
+Para conectarte con cualquier cliente PostgreSQL, usa los valores de `backend/.env` (host `localhost`, puerto `5432` por defecto).
+
+Para detener la base de datos: `docker compose --env-file backend/.env down`
+
+### 4. Prepara la base de datos con Prisma
+
+Asegúrate de que `backend/.env` contenga `DATABASE_URL` con la cadena de conexión correcta. Luego, desde `backend/`:
+
+```sh
 cd backend
-npm run build
-````
-4. Inicia el servidor backend:
-```
-cd backend
-npm start
-```
-5. En una nueva ventana de terminal, construye el servidor frontend:
-```
-cd frontend
-npm run build
-```
-6. Inicia el servidor frontend:
-```
-cd frontend
-npm start
-```
-
-El servidor backend estará corriendo en http://localhost:3010 y el frontend estará disponible en http://localhost:3000.
-
-## Docker y PostgreSQL
-
-Este proyecto usa Docker para ejecutar una base de datos PostgreSQL. Así es cómo ponerlo en marcha:
-
-Instala Docker en tu máquina si aún no lo has hecho. Puedes descargarlo desde aquí.
-Navega al directorio raíz del proyecto en tu terminal.
-Ejecuta el siguiente comando para iniciar el contenedor Docker:
-```
-docker-compose up -d
-```
-Esto iniciará una base de datos PostgreSQL en un contenedor Docker. La bandera -d corre el contenedor en modo separado, lo que significa que se ejecuta en segundo plano.
-
-Para acceder a la base de datos PostgreSQL, puedes usar cualquier cliente PostgreSQL con los siguientes detalles de conexión:
- - Host: localhost
- - Port: 5432
- - User: postgres
- - Password: password
- - Database: mydatabase
-
-Por favor, reemplaza User, Password y Database con el usuario, la contraseña y el nombre de la base de datos reales especificados en tu archivo .env.
-
-Para detener el contenedor Docker, ejecuta el siguiente comando:
-```
-docker-compose down
-```
-
-Para generar la base de datos utilizando Prisma, sigue estos pasos:
-
-1. Asegúrate de que el archivo `.env` en el directorio raíz del backend contenga la variable `DATABASE_URL` con la cadena de conexión correcta a tu base de datos PostgreSQL. Si no te funciona, prueba a reemplazar la URL completa directamente en `schema.prisma`, en la variable `url`.
-
-2. Abre una terminal y navega al directorio del backend donde se encuentra el archivo `schema.prisma` y `seed.ts`.
-
-3. Ejecuta los siguientes comandos para generar la estructura de prisma, las migraciones a tu base de datos y poblarla con datos de ejemplo:
-```
 npx prisma generate
 npx prisma migrate dev
-ts-node seed.ts
+npm run seed
 ```
 
-Una vez has dado todos los pasos, deberías poder guardar nuevos candidatos, tanto via web, como via API, verlos en la base de datos y obtenerlos mediante GET por id. 
+Esto genera el cliente de Prisma, aplica las migraciones y puebla la base de datos con datos de ejemplo.
+
+`npm run seed` se puede ejecutar tantas veces como quieras: antes de crear los datos **borra todo el contenido** de la base de datos y reinicia los ids, de modo que las posiciones de ejemplo (1, 2 y 3), sus fases y sus candidatos son siempre los mismos. Se niega a ejecutarse con `NODE_ENV=production`.
+
+### 5. Inicia el backend
+
+En una nueva terminal:
+
+```sh
+cd backend
+npm run dev
+```
+
+El backend corre en http://localhost:3010 y se reinicia solo al cambiar archivos. Para una ejecución tipo producción usa `npm run build && npm start`.
+
+### 6. Inicia el frontend
+
+En otra terminal:
+
+```sh
+cd frontend
+npm start
+```
+
+El frontend corre en http://localhost:3000. No hace falta ejecutar `npm run build` antes; eso es solo para builds de producción.
+
+Una vez todo está en marcha, puedes guardar nuevos candidatos, tanto vía web como vía API, verlos en la base de datos y obtenerlos mediante GET por id.
 
 ```
 POST http://localhost:3010/candidates
@@ -322,3 +324,14 @@ POST http://localhost:3010/candidates
 ```
 
 
+
+## Desarrollo guiado por especificaciones con OpenSpec
+
+Este proyecto usa [OpenSpec](https://github.com/Fission-AI/OpenSpec) para planificar los cambios antes de implementarlos. Está instalado como devDependency en el `package.json` de la raíz y configurado para Claude Code (ver `openspec/` y `.claude/`).
+
+- Proponer un cambio: `/opsx:propose "descripción"`. Genera la propuesta, el diseño, las specs y las tareas en `openspec/changes/`.
+- Implementarlo: `/opsx:apply`.
+- Sincronizar y archivar al terminar: `/opsx:sync`, y después `/opsx:archive`.
+- Validar las specs: `npx openspec validate --all`.
+
+Las specs vigentes están en `openspec/specs/`. Modifícalas a través de un cambio, no a mano.

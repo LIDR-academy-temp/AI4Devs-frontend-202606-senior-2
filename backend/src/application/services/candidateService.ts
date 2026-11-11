@@ -4,6 +4,8 @@ import { Education } from '../../domain/models/Education';
 import { WorkExperience } from '../../domain/models/WorkExperience';
 import { Resume } from '../../domain/models/Resume';
 import { Application } from '../../domain/models/Application';
+import { Position } from '../../domain/models/Position';
+import { InterviewStep } from '../../domain/models/InterviewStep';
 
 export const addCandidate = async (candidateData: any) => {
     try {
@@ -70,6 +72,15 @@ export const updateCandidateStage = async (id: number, applicationIdNumber: numb
         const application = await Application.findOneByPositionCandidateId(applicationIdNumber, id);
         if (!application) {
             throw new Error('Application not found');
+        }
+
+        // La fase destino debe pertenecer al proceso de la posición de la aplicación
+        const [position, step] = await Promise.all([
+            Position.findOne(application.positionId),
+            InterviewStep.findOne(currentInterviewStep)
+        ]);
+        if (!position || !step || step.interviewFlowId !== position.interviewFlowId) {
+            throw new Error('Invalid currentInterviewStep for the position of this application');
         }
 
         // Actualizar solo la etapa de la entrevista actual de la aplicación específica

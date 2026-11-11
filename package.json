@@ -6,5 +6,6 @@
     "schema": "backend/prisma/schema.prisma"
   },
   "devDependencies": {
+    "@fission-ai/openspec": "^1.17.0"
   }
 }

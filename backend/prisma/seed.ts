@@ -3,6 +3,18 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('The seed deletes all data and cannot run with NODE_ENV=production');
+  }
+
+  // Empty every table and restart the id sequences so the seed can be re-run
+  // and always produces the same ids (positions 1-3, interview steps 1-3...)
+  await prisma.$executeRawUnsafe(
+    'TRUNCATE TABLE "Interview", "Application", "Position", "InterviewStep", "InterviewFlow", ' +
+    '"InterviewType", "Employee", "Company", "Resume", "WorkExperience", "Education", "Candidate" ' +
+    'RESTART IDENTITY CASCADE'
+  );
+
   // Create Companies
   const company1 = await prisma.company.create({
     data: {
@@ -46,11 +58,12 @@ async function main() {
     },
   });
 
-  const position2 = await prisma.position.create({
+  // Position 2 uses the second interview flow, which has no steps
+  await prisma.position.create({
     data: {
       title: 'Data Scientist',
       description: 'Analyze and interpret complex data.',
-      status: 'Open',
+      status: 'Filled',
       isVisible: true,
       location: 'Remote',
       jobDescription: 'Data analysis and machine learning',
@@ -63,6 +76,29 @@ async function main() {
       contactInfo: 'hr@lti.com',
       requirements: 'Master degree in Data Science or related field, proficiency in Python and R',
       responsibilities: 'Analyze data sets to derive business insights and develop predictive models.',
+      companyDescription: 'LTI is a leading HR solutions provider.',
+      applicationDeadline: new Date('2024-12-31')
+    },
+  });
+
+  // Position 3 reuses the first interview flow and has no applications
+  await prisma.position.create({
+    data: {
+      title: 'Product Manager',
+      description: 'Define the product roadmap and coordinate the teams.',
+      status: 'Draft',
+      isVisible: true,
+      location: 'Remote',
+      jobDescription: 'Product management',
+      companyId: company1.id,
+      interviewFlowId: interviewFlow1.id,
+      salaryMin: 55000,
+      salaryMax: 85000,
+      employmentType: 'Full-time',
+      benefits: 'Health insurance, 401k, Paid time off',
+      contactInfo: 'hr@lti.com',
+      requirements: '3+ years of experience in product management',
+      responsibilities: 'Prioritize the backlog and work with stakeholders.',
       companyDescription: 'LTI is a leading HR solutions provider.',
       applicationDeadline: new Date('2024-12-31')
     },
@@ -189,6 +225,26 @@ async function main() {
     },
   });
 
+  const candidate4 = await prisma.candidate.create({
+    data: {
+      firstName: 'Alice',
+      lastName: 'Johnson',
+      email: 'alice.johnson@example.com',
+      phone: '5551112222',
+      address: '12 Oak St',
+    },
+  });
+
+  const candidate5 = await prisma.candidate.create({
+    data: {
+      firstName: 'Bob',
+      lastName: 'Brown',
+      email: 'bob.brown@example.com',
+      phone: '5553334444',
+      address: '34 Maple St',
+    },
+  });
+
   // Create Interview Types
   const interviewType1 = await prisma.interviewType.create({
     data: {
@@ -260,26 +316,18 @@ async function main() {
     },
   });
 
-  // Create Applications
+  // Create Applications. Position 1 has candidates in every step of its flow;
+  // positions 2 (empty flow) and 3 have no applications.
   const application1 = await prisma.application.create({
     data: {
       positionId: position1.id,
       candidateId: candidate1.id,
       applicationDate: new Date(),
-      currentInterviewStep: interviewStep2.id,
+      currentInterviewStep: interviewStep3.id,
     },
   });
 
   const application2 = await prisma.application.create({
-    data: {
-      positionId: position2.id,
-      candidateId: candidate1.id,
-      applicationDate: new Date(),
-      currentInterviewStep: interviewStep2.id,
-    },
-  });
-
-  const application3 = await prisma.application.create({
     data: {
       positionId: position1.id,
       candidateId: candidate2.id,
@@ -288,7 +336,8 @@ async function main() {
     },
   });
 
-  const application4 = await prisma.application.create({
+  // Carlos has no interviews yet, so his average score is 0
+  await prisma.application.create({
     data: {
       positionId: position1.id,
       candidateId: candidate3.id,
@@ -297,37 +346,42 @@ async function main() {
     },
   });
 
+  const application4 = await prisma.application.create({
+    data: {
+      positionId: position1.id,
+      candidateId: candidate4.id,
+      applicationDate: new Date(),
+      currentInterviewStep: interviewStep1.id,
+    },
+  });
 
-  // Create Interviews
+  const application5 = await prisma.application.create({
+    data: {
+      positionId: position1.id,
+      candidateId: candidate5.id,
+      applicationDate: new Date(),
+      currentInterviewStep: interviewStep2.id,
+    },
+  });
+
+  // Create Interviews (scores: John 5, Jane 4, Alice 3.5, Bob 2, Carlos none)
+  const interview = (applicationId: number, score: number, notes: string) => ({
+    applicationId,
+    interviewStepId: interviewStep1.id,
+    employeeId: employee1.id,
+    interviewDate: new Date(),
+    result: 'Passed',
+    score,
+    notes,
+  });
+
   await prisma.interview.createMany({
     data: [
-      {
-        applicationId: application1.id,
-        interviewStepId: interviewStep1.id,
-        employeeId: employee1.id,
-        interviewDate: new Date(),
-        result: 'Passed',
-        score: 5,
-        notes: 'Good technical skills',
-      },
-      {
-        applicationId: application2.id,
-        interviewStepId: interviewStep1.id,
-        employeeId: employee1.id,
-        interviewDate: new Date(),
-        result: 'Passed',
-        score: 5,
-        notes: 'Excellent data analysis skills',
-      },
-      {
-        applicationId: application3.id,
-        interviewStepId: interviewStep1.id,
-        employeeId: employee1.id,
-        interviewDate: new Date(),
-        result: 'Passed',
-        score: 4,
-        notes: 'Good technical skills',
-      }
+      interview(application1.id, 5, 'Good technical skills'),
+      interview(application2.id, 4, 'Good technical skills'),
+      interview(application4.id, 3, 'Good communication'),
+      interview(application4.id, 4, 'Solid fundamentals'),
+      interview(application5.id, 2, 'Needs more experience'),
     ],
   });
 }
