@@ -32,4 +32,30 @@ describe('updateCandidateStageController', () => {
         },
       });
     });
+
+    const buildRes = () => ({
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as unknown as Response);
+
+    it('should return 400 mentioning applicationId when it is not numeric', async () => {
+      const req = { params: { id: '1' }, body: { currentInterviewStep: 2 } } as unknown as Request;
+      const res = buildRes();
+
+      await updateCandidateStageController(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: expect.stringContaining('applicationId') });
+      expect(updateCandidateStage).not.toHaveBeenCalledWith(1, NaN, 2);
+    });
+
+    it('should return 400 mentioning currentInterviewStep when it is not numeric', async () => {
+      const req = { params: { id: '1' }, body: { applicationId: 1 } } as unknown as Request;
+      const res = buildRes();
+
+      await updateCandidateStageController(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: expect.stringContaining('currentInterviewStep') });
+    });
   });

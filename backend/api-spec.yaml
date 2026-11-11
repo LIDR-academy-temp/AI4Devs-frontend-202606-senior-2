@@ -185,7 +185,80 @@ paths:
           description: Invalid file type, only PDF and DOCX are allowed
         '500':
           description: Error during the file upload process
-  /position/{id}/candidates:
+  /positions:
+    get:
+      summary: List positions
+      description: Retrieves all the positions ordered by id. It does not include the position manager.
+      responses:
+        '200':
+          description: List of positions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    title:
+                      type: string
+                    status:
+                      type: string
+                      description: Position status as stored (for example Open, Filled, Closed or Draft)
+                    applicationDeadline:
+                      type: string
+                      format: date-time
+                      nullable: true
+        '500':
+          description: Internal server error
+  /positions/{id}/interviewFlow:
+    get:
+      summary: Get the interview flow of a position
+      description: Retrieves the position title and the steps of its hiring process.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID of the position
+      responses:
+        '200':
+          description: Interview flow of the position
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  positionName:
+                    type: string
+                  interviewFlow:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      description:
+                        type: string
+                        nullable: true
+                      interviewSteps:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            interviewFlowId:
+                              type: integer
+                            interviewTypeId:
+                              type: integer
+                            name:
+                              type: string
+                            orderIndex:
+                              type: integer
+        '404':
+          description: Position not found
+  /positions/{id}/candidates:
     get:
       summary: Get candidates by position
       description: Retrieves all candidates for a specific position.
@@ -210,16 +283,20 @@ paths:
                       type: string
                     currentInterviewStep:
                       type: string
+                      description: Name of the current interview step
                     averageScore:
                       type: number
-        '404':
-          description: Position not found
+                    id:
+                      type: integer
+                      description: ID of the candidate
+                    applicationId:
+                      type: integer
         '500':
           description: Internal server error
-  /candidates/{id}:
+  /candidates/{id}/stage:
     put:
       summary: Update candidate stage
-      description: Updates the interview stage of a specific candidate.
+      description: Updates the interview stage of a specific candidate. BREAKING - replaces PUT /candidates/{id}. The step must belong to the interview flow of the application's position.
       parameters:
         - in: path
           name: id
